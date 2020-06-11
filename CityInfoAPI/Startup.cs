@@ -30,6 +30,8 @@ namespace CityInfoAPI
                 app.UseExceptionHandler();
             }
 
+            app.UseStatusCodePages(); // optional so I can see the status codes
+
             app.UseMvc();
         }
     }
