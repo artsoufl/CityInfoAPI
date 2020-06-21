@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace CityInfoAPI.Models
 {
+    // used to get city related data, not set!
     public class CityDto
     {
         public int Id { get; set; }
