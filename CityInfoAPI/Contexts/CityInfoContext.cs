@@ -20,6 +20,7 @@ namespace CityInfoAPI.Contexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // add data in database
             modelBuilder.Entity<City>()
                 .HasData(
                 new City()
