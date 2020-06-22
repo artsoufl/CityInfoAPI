@@ -70,25 +70,20 @@ namespace CityInfoAPI.Controllers
         {
             if (pointOfInterest == null) return BadRequest();
 
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityid);
-            if (city == null) return NotFound();
+            if (!_cityRepo.CityExists(cityid)) return NotFound();
 
-            var maxPointOfInterestId = CitiesDataStore.Current.Cities.SelectMany(c => c.PointsOfInterest).Max(p =>p.Id);
+            var finalPoi = _mapper.Map<Entities.PointOfInterest>(pointOfInterest);
 
-            var finalPoi = new PointOfInterestDto()
-            {
-                Id = ++maxPointOfInterestId,
-                Name = pointOfInterest.Name,
-                Description = pointOfInterest.Description
-            };
+            _cityRepo.AddPointOfInterestForCity(cityid, finalPoi);
+            _cityRepo.Save();
 
-            city.PointsOfInterest.Add(finalPoi);
+            var createdPoi = _mapper.Map<Models.PointOfInterestDto>(finalPoi);
 
             // validating the input that way
             return CreatedAtRoute(
                 "GetPointOfInterest", 
-                new { cityid = cityid, id = finalPoi.Id},
-                finalPoi);
+                new { cityid = cityid, id = createdPoi.Id},
+                createdPoi);
         }
 
         [HttpPut("{id}")]    // id of the poi that we will update
@@ -96,15 +91,15 @@ namespace CityInfoAPI.Controllers
         {
             if (pointOfInterest == null) return BadRequest();
 
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityid);
-            if (city == null) return NotFound();
+            if (!_cityRepo.CityExists(cityid)) return NotFound();
 
-            var poiFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == id);
-            if (poiFromStore == null) return NotFound();
+            var poiEntity = _cityRepo.GetPointOfInterestForCity(cityid, id);
+            if (poiEntity == null) return NotFound();
 
-            // in this way if in the new object description is null then it will be set to null
-            poiFromStore.Name = pointOfInterest.Name;
-            poiFromStore.Description = pointOfInterest.Description;
+            _mapper.Map(pointOfInterest, poiEntity);
+
+            _cityRepo.UpdatePointOfInterestForCity(cityid, poiEntity);
+            _cityRepo.Save();
 
             return NoContent();
         }
