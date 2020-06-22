@@ -1,4 +1,5 @@
-﻿using CityInfoAPI.Entities;
+﻿using AutoMapper;
+using CityInfoAPI.Entities;
 using CityInfoAPI.Models;
 using CityInfoAPI.Services;
 using Microsoft.AspNetCore.JsonPatch;
@@ -18,12 +19,14 @@ namespace CityInfoAPI.Controllers
         private readonly ILogger<PointsOfInterestController> _logger;
         private readonly IMailService _mailService;
         private readonly ICityInfoRepository _cityRepo;
+        private readonly IMapper _mapper;
 
-        public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mail, ICityInfoRepository cityRepo)
+        public PointsOfInterestController(ILogger<PointsOfInterestController> logger, IMailService mail, ICityInfoRepository cityRepo, IMapper mapper)
         {
             _logger = logger;
             _mailService = mail;
             _cityRepo = cityRepo;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -37,19 +40,8 @@ namespace CityInfoAPI.Controllers
                     return NotFound();
                 }
 
-                var poiForCity = _cityRepo.GetPointsOfInterest(cityId);
-                var poiForCityResults = new List<PointOfInterestDto>();
-                foreach (var poi in poiForCity)
-                {
-                    poiForCityResults.Add(new PointOfInterestDto()
-                    {
-                        Id = poi.Id,
-                        Name = poi.Name,
-                        Description = poi.Description
-                    });
-                }
-                
-                return Ok(poiForCityResults);
+                var poiForCity = _cityRepo.GetPointsOfInterest(cityId);             
+                return Ok(_mapper.Map<IEnumerable<PointOfInterestDto>>(poiForCity));
             }
             catch (Exception e)
             {
@@ -70,14 +62,7 @@ namespace CityInfoAPI.Controllers
             var poi = _cityRepo.GetPointOfInterestForCity(cityId, id);
             if (poi == null) return NotFound();
 
-            var result = new PointOfInterestDto()
-            {
-                Id = poi.Id,
-                Name = poi.Name,
-                Description = poi.Description
-            };
-
-            return Ok(result);
+            return Ok(_mapper.Map<PointOfInterestDto>(poi));
         }
 
         [HttpPost]
