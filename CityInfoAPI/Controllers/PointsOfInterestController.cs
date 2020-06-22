@@ -109,18 +109,12 @@ namespace CityInfoAPI.Controllers
         [HttpPatch("{id}")]    // id of the poi that we will update
         public IActionResult PartiallyUpdatePointOfInterest(int cityid, int id, [FromBody] JsonPatchDocument<PointOfInterestForUpdateDto> patchDoc)
         {
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityid);
-            if (city == null) return NotFound();
+            if (!_cityRepo.CityExists(cityid)) return NotFound();
 
-            var poiFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == id);
-            if (poiFromStore == null) return NotFound();
+            var poiEntity = _cityRepo.GetPointOfInterestForCity(cityid, id);
+            if (poiEntity == null) return NotFound();
 
-            var pointOfInterestToPatch =
-                new PointOfInterestForUpdateDto()
-                {
-                    Name = poiFromStore.Name,
-                    Description = poiFromStore.Description
-                };
+            var pointOfInterestToPatch = _mapper.Map<PointOfInterestForUpdateDto>(poiEntity);
 
             patchDoc.ApplyTo(pointOfInterestToPatch, ModelState);
 
@@ -133,8 +127,10 @@ namespace CityInfoAPI.Controllers
 
             if (!TryValidateModel(pointOfInterestToPatch)) return BadRequest(ModelState);
 
-            poiFromStore.Name = pointOfInterestToPatch.Name;
-            poiFromStore.Description = pointOfInterestToPatch.Description;
+            _mapper.Map(pointOfInterestToPatch, poiEntity);
+
+            _cityRepo.UpdatePointOfInterestForCity(cityid, poiEntity);
+            _cityRepo.Save();
 
             return NoContent();
         }
@@ -142,15 +138,15 @@ namespace CityInfoAPI.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeletePointOfInterest(int cityId, int id)
         {
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
-            if (city == null) return NotFound();
+            if (!_cityRepo.CityExists(cityId)) return NotFound();
 
-            var poiFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == id);
-            if (poiFromStore == null) return NotFound();
+            var poiEntity = _cityRepo.GetPointOfInterestForCity(cityId, id);
+            if (poiEntity == null) return NotFound();
 
-            city.PointsOfInterest.Remove(poiFromStore);
+            _cityRepo.DeletePointOfInterest(poiEntity);
+            _cityRepo.Save();
 
-            _mailService.Send("Point of interest deleted", $"Point of interest {poiFromStore.Name} with id {poiFromStore.Id}");
+            _mailService.Send("Point of interest deleted", $"Point of interest {poiEntity.Name} with id {poiEntity.Id}");
 
             return NoContent();
         }
